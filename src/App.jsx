@@ -8,10 +8,10 @@ import Connexion from "./pages/Connexion";
 import Inscription from "./pages/Inscription";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import DashboardUser from "./pages/DashboardUser";
+import ProductDetails from "./pages/components/ProductDetails"
 import axios from 'axios';
 
 function App() {
-
   const [role, setRole] = useState(null);
 
   useEffect(() => {
@@ -31,7 +31,6 @@ function App() {
     fetchRole();
   }, []);
 
-
   return (
     <>
       <BrowserRouter>
@@ -40,6 +39,7 @@ function App() {
             <Route index element={<Accueil />} />
             <Route path="/nouveaute" element={<Nouveaute />} />
             <Route path="/produit" element={<Produit />} />
+            <Route path="/produit/:id" element={<ProductDetails />} /> {/* Nouvelle route */}
             <Route path="/connexion" element={<Connexion />} />
             {role === 'admin' ? (
               <Route path="/dashboard" element={<DashboardAdmin />} />
@@ -48,8 +48,8 @@ function App() {
             )}
             <Route path="/inscription" element={<Inscription />} />
           </Route>
-        </Routes >
-      </BrowserRouter >
+        </Routes>
+      </BrowserRouter>
     </>
   );
 }

@@ -8,7 +8,8 @@ export default function DashboardAdmin() {
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [newUser, setNewUser] = useState({ username: '', email: '', role: 'user', password: '' });
-  const [newProduct, setNewProduct] = useState({ name: '', price: '', image_url: '', alt_text: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', price: '', images: [{ image_url: '' }] });
+  const [imageURLs, setImageURLs] = useState(['']);
   const [selectedTable, setSelectedTable] = useState('users');
   const [isAdded, setIsAdded] = useState(false);
   const [addUser, setAddUser] = useState('false');
@@ -17,12 +18,37 @@ export default function DashboardAdmin() {
   const [editUser, setEditUser] = useState(null);
   const [editedUser, setEditedUser] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [editProduct, setEditProduct] = useState(null);
+  const [editedProduct, setEditedProduct] = useState({});
   const usersPerPage = 10;
 
   useEffect(() => {
     fetchUsers();
     fetchProducts();
   }, []);
+
+  const handleUpdateProduct = async (id) => {
+    try {
+      await axios.put(`http://localhost:3001/produit/${id}`, editedProduct);
+      fetchProducts();
+      setEditProduct(null);
+      toast.success('Produit mis à jour avec succès !');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du produit:', error);
+      toast.error('Erreur lors de la mise à jour du produit. Veuillez réessayer.');
+    }
+  };
+
+
+  const handleImageChange = (index, value) => {
+    const newImages = [...newProduct.images];
+    newImages[index] = value;
+    setNewProduct({ ...newProduct, images: newImages });
+
+    const newImageURLs = [...imageURLs];
+    newImageURLs[index] = value;
+    setImageURLs(newImageURLs);
+  };
 
   const handleUpdateUser = (id) => {
     fetch(`http://localhost:3001/users/${id}`, {
@@ -78,11 +104,23 @@ export default function DashboardAdmin() {
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
+    console.log(JSON.stringify(newProduct))
     try {
-      await axios.post('http://localhost:3001/produit', newProduct);
-      fetchProducts();
-      setNewProduct({ name: '', price: '', image_url: '', alt_text: '' });
-      toast.success('Produit ajouté avec succès !');
+      const response = await fetch('http://localhost:3001/produit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProduct),
+      });
+      if (response.ok) {
+        fetchProducts();
+        setNewProduct({ name: '', price: '', images: [] });
+        setImageURLs(['']);
+        toast.success('Produit ajouté avec succès !');
+      } else {
+        throw new Error('Erreur lors de l\'ajout du produit');
+      }
     } catch (error) {
       console.error('Erreur lors de l\'ajout du produit:', error);
       toast.error('Erreur lors de l\'ajout du produit. Veuillez réessayer.');
@@ -109,6 +147,17 @@ export default function DashboardAdmin() {
       console.error("Erreur lors de la suppression du produit:", error);
       toast.error('Erreur lors de la suppression du produit. Veuillez réessayer.');
     }
+  };
+
+  const handleRemoveImageField = (index) => {
+    const newImages = newProduct.images.filter((_, i) => i !== index);
+    const newImageURLs = imageURLs.filter((_, i) => i !== index);
+    setNewProduct({ ...newProduct, images: newImages });
+    setImageURLs(newImageURLs);
+  };
+
+  const handleAddImageField = () => {
+    setImageURLs([...imageURLs, '']);
   };
 
   const handleButtonClick = () => {
@@ -366,6 +415,17 @@ export default function DashboardAdmin() {
                 />
               </div>
               <div className="mb-5">
+                <label htmlFor="productDescription" className="block mb-2 text-sm font-medium text-gray-900">Description</label>
+                <textarea
+                  id="productDescription"
+                  placeholder="Description du produit"
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  required
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                />
+              </div>
+              <div className="mb-5">
                 <label htmlFor="productPrice" className="block mb-2 text-sm font-medium text-gray-900">Prix</label>
                 <input
                   type="number"
@@ -377,28 +437,44 @@ export default function DashboardAdmin() {
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                 />
               </div>
+              {imageURLs.map((imageURL, index) => (
+                <div key={index} className="mb-5">
+                  <label htmlFor={`productImageUrl${index}`} className="block mb-2 text-sm font-medium text-gray-900">URL de l'image {index + 1}</label>
+                  <input
+                    type="text"
+                    id={`productImageUrl${index}`}
+                    placeholder="URL de l'image"
+                    value={imageURL}
+                    onChange={(e) => handleImageChange(index, e.target.value)}
+                    required
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                  />
+                  {index > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImageField(index)}
+                      className="text-red-600 hover:underline mt-2"
+                    >
+                      Supprimer l'image
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleAddImageField}
+                className="text-blue-600 hover:underline mb-4"
+              >
+                Ajouter une autre image
+              </button>
               <div className="mb-5">
-                <label htmlFor="productImageUrl" className="block mb-2 text-sm font-medium text-gray-900">URL de l'image</label>
+                <label htmlFor="productNew" className="block mb-2 text-sm font-medium text-gray-900">Nouveau produit</label>
                 <input
-                  type="text"
-                  id="productImageUrl"
-                  placeholder="URL de l'image"
-                  value={newProduct.image_url}
-                  onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value })}
-                  required
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                />
-              </div>
-              <div className="mb-5">
-                <label htmlFor="productImageAlt" className="block mb-2 text-sm font-medium text-gray-900">Texte alternatif de l'image</label>
-                <input
-                  type="text"
-                  id="productImageAlt"
-                  placeholder="Texte alternatif de l'image"
-                  value={newProduct.alt_text}
-                  onChange={(e) => setNewProduct({ ...newProduct, alt_text: e.target.value })}
-                  required
-                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                  type="checkbox"
+                  id="productNew"
+                  checked={newProduct.isNew}
+                  onChange={(e) => setNewProduct({ ...newProduct, isNew: e.target.checked })}
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block"
                 />
               </div>
               <button
@@ -414,9 +490,10 @@ export default function DashboardAdmin() {
               <thead className="text-xs text-gray-700 uppercase bg-gray-50  ">
                 <tr>
                   <th scope="col" className="px-6 py-3">Nom</th>
+                  <th scope="col" className="px-6 py-3">Description</th>
                   <th scope="col" className="px-6 py-3">Prix</th>
                   <th scope="col" className="px-6 py-3">Image</th>
-                  <th scope="col" className="px-6 py-3">Texte alternatif</th>
+                  <th scope="col" className="px-6 py-3">Nouveau</th>
                   <th scope="col" className="px-6 py-3">Actions</th>
                 </tr>
               </thead>
@@ -424,17 +501,19 @@ export default function DashboardAdmin() {
                 {products.map(product => (
                   <tr key={product.id} className="bg-white border-b hover:bg-gray-50">
                     <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{product.name}</td>
+                    <td className="px-6 py-4">{product.description}</td>
                     <td className="px-6 py-4">{product.price}</td>
-                    <td className="px-6 py-4">
-                      <img src={product.image_url} alt={product.alt_text} className="h-12 w-12 object-cover" />
+                    <td className="px-6 py-4 flex">
+                      {product.images.map((image, index) => (
+                        <img key={index} src={image.url} alt={`Image ${index + 1}`} className="h-12 w-12 object-cover mr-2" />
+                      ))}
                     </td>
-                    <td className="px-6 py-4">{product.alt_text}</td>
+                    <td className="px-6 py-4">{product.isNew ? 'Oui' : 'Non'}</td>
                     <td className="px-6 py-4">
                       <button onClick={() => handleDeleteProduct(product.id)} className="font-medium text-red-600  hover:underline">Supprimer</button>
                     </td>
                   </tr>
                 ))}
-
               </tbody>
             </table>
             <div className="flex justify-center mt-4">

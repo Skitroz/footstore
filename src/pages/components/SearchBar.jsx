@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { styled, alpha } from '@mui/material/styles';
 import AppBar from '@mui/material/AppBar';
@@ -34,7 +34,6 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   color: 'inherit',
   '& .MuiInputBase-input': {
     padding: theme.spacing(1, 1, 1, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
     transition: theme.transitions.create('width'),
     width: '100%',
     [theme.breakpoints.up('sm')]: {
@@ -48,6 +47,22 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 export default function SearchBar() {
   const { isAuthenticated } = useContext(AuthContext);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState([]);
+
+  const handleSearchChange = (event) => {
+    const query = event.target.value;
+    setSearchQuery(query);
+
+    if (query.length > 0) {
+      fetch(`http://localhost:3001/produit/recherche?q=${query}`)
+        .then(response => response.json())
+        .then(data => setProducts(data))
+        .catch(error => console.error('Erreur lors de la recherche de produits :', error));
+    } else {
+      setProducts([]);
+    }
+  };
 
   const handleLogout = () => {
     try {
@@ -65,12 +80,23 @@ export default function SearchBar() {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Link to="/"><img src={Logo} alt="Logo FootStore" width={200} /></Link>
           </Box>
-          <Search>
-              <SearchIcon />
+          <Search className='flex items-center gap-2'>
+            <SearchIcon className='ml-2' />
             <StyledInputBase
               placeholder="Rechercher…"
               inputProps={{ 'aria-label': 'search' }}
+              value={searchQuery}
+              onChange={handleSearchChange}
             />
+            {products.length > 0 && (
+              <Box className='absolute top-12 left-0 right-0 bg-white text-black shadow-lg z-10'>
+                {products.map(product => (
+                  <a href={`/produit/${product.id}`} key={product.id} className='block px-4 py-2 hover:bg-gray-200'>
+                    {product.name}
+                  </a>
+                ))}
+              </Box>
+            )}
           </Search>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <IconButton size="large" color="inherit">
